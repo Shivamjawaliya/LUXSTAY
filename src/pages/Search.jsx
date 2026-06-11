@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { searchHotels } from '../services/hotelsClient'
 import { useAuth } from '../context/AuthContext'
+import HotelCard from '../components/HotelCard'
+import CompareTray from '../components/CompareTray'
 
 const DESTINATIONS = [
   'Amsterdam', 'Athens', 'Atlanta', 'Auckland', 'Bali', 'Bangkok', 'Barcelona',
@@ -109,9 +111,9 @@ export default function Search() {
     setError(null)
     setHotels([])
     setNextPageToken(null)
-    setSearched(true)
     setCity(cityVal)
     try {
+      setSearched(true)
       localStorage.setItem('luxstay_dates', JSON.stringify({ checkIn: checkInVal, checkOut: checkOutVal, adults: adultsVal }))
       const { hotels: results, totalCount: total, nextPageToken: token } = await searchHotels({
         city: cityVal, checkIn: checkInVal, checkOut: checkOutVal, adults: adultsVal,
@@ -334,120 +336,3 @@ export default function Search() {
   )
 }
 
-function CompareTray({ selected, onRemove }) {
-  return (
-    <div className="bg-white border-b border-gray-100 px-6 py-3">
-      <div className="flex items-center gap-3 overflow-x-auto">
-        <span className="text-xs text-gray-400 shrink-0 mr-1">Compare:</span>
-        {selected.map((hotel) => (
-          <div
-            key={hotel.id}
-            className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 shrink-0 w-48"
-          >
-            {hotel.image ? (
-              <img src={hotel.image} alt={hotel.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />
-            ) : (
-              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                <span className="text-lg">🏨</span>
-              </div>
-            )}
-            <span className="text-xs font-medium text-gray-900 truncate flex-1">{hotel.name}</span>
-            <button
-              onClick={(e) => { e.stopPropagation(); onRemove(hotel) }}
-              className="text-gray-300 hover:text-gray-900 text-lg leading-none font-light transition-colors shrink-0"
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function StarRating({ count }) {
-  if (!count) return null
-  const full = Math.floor(Math.min(count, 5))
-  return (
-    <span className="text-amber-400 text-xs tracking-tight">
-      {'★'.repeat(full)}<span className="text-gray-200">{'★'.repeat(Math.max(0, 5 - full))}</span>
-    </span>
-  )
-}
-
-function HotelCard({ hotel, isSelected, onToggle }) {
-  return (
-    <div
-      className={`bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${
-        isSelected
-          ? 'border-2 border-gray-900 shadow-md'
-          : 'border border-gray-200 shadow-sm hover:border-gray-300'
-      }`}
-      onClick={() => {
-        sessionStorage.setItem('luxstay_hotel', JSON.stringify(hotel))
-        window.location.href = `/hotel/${encodeURIComponent(hotel.id)}`
-      }}
-    >
-      {/* Image */}
-      <div className="relative w-full h-48 overflow-hidden">
-        {hotel.image ? (
-          <img src={hotel.image} alt={hotel.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
-        ) : (
-          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-            <span className="text-3xl text-gray-300">🏨</span>
-          </div>
-        )}
-        {/* Deal badge overlay */}
-        {hotel.deal && (
-          <span className="absolute top-3 left-3 bg-emerald-600 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
-            {hotel.deal}
-          </span>
-        )}
-        {/* Compare checkbox overlay */}
-        <div
-          className="absolute top-3 right-3"
-          onClick={(e) => { e.stopPropagation(); onToggle() }}
-        >
-          <div className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer shadow-sm ${
-            isSelected ? 'bg-gray-900 border-gray-900' : 'bg-white/90 border-gray-300 hover:border-gray-600'
-          }`}>
-            {isSelected && <span className="text-white text-xs font-bold">✓</span>}
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-4">
-        <h3 className="text-sm font-semibold text-gray-900 leading-snug mb-1.5 line-clamp-2">{hotel.name}</h3>
-
-        <div className="flex items-center gap-2 mb-2">
-          <StarRating count={hotel.starRating} />
-          {hotel.guestRating && (
-            <span className="text-xs font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-lg">
-              {hotel.guestRating} / 5
-            </span>
-          )}
-          {hotel.reviewCount && (
-            <span className="text-xs text-gray-400">{hotel.reviewCount.toLocaleString()} reviews</span>
-          )}
-        </div>
-
-        {hotel.description && (
-          <p className="text-xs text-gray-400 line-clamp-2 mb-3 leading-relaxed">{hotel.description}</p>
-        )}
-
-        <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-          <div className="flex items-baseline gap-1">
-            <span className="text-base font-bold text-gray-900">{hotel.price}</span>
-            <span className="text-xs text-gray-400">/ night</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {hotel.freeCancellation && (
-              <span className="text-xs text-emerald-600 font-medium bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">Free cancel</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}

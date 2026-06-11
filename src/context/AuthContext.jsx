@@ -8,15 +8,10 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Restore session from Supabase (also reads localStorage internally)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.access_token) {
-        localStorage.setItem('luxstay_token', session.access_token)
-      }
-      setLoading(false)
-    })
-
+    // onAuthStateChange fires INITIAL_SESSION on mount (Supabase v2),
+    // which processes any OAuth hash/code in the URL before resolving.
+    // Using it as the sole source of truth prevents the OAuth race where
+    // getSession() resolved null before the hash was exchanged.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session?.access_token) {
@@ -24,6 +19,7 @@ export function AuthProvider({ children }) {
       } else {
         localStorage.removeItem('luxstay_token')
       }
+      setLoading(false)
     })
 
     return () => subscription.unsubscribe()
