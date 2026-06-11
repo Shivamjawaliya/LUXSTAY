@@ -41,11 +41,15 @@ export default function Compare() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setHotels(getCompare())
+    const list = getCompare()
+    console.log(`[Compare] page loaded with ${list.length} hotels:`, list.map(h => h.name))
+    setHotels(list)
     setLoading(false)
   }, [])
 
   const removeHotel = (id) => {
+    const removed = hotels.find((h) => h.id === id)
+    console.log(`[Compare] removed hotel: ${removed?.name}`)
     const updated = hotels.filter((h) => h.id !== id)
     setHotels(updated)
     localStorage.setItem('luxstay_compare', JSON.stringify(updated))

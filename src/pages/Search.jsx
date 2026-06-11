@@ -107,6 +107,7 @@ export default function Search() {
   }, [])
 
   const runSearch = async ({ cityVal, checkInVal, checkOutVal, adultsVal }) => {
+    console.log(`[Search] searching: city=${cityVal} checkIn=${checkInVal} checkOut=${checkOutVal} adults=${adultsVal}`)
     setLoading(true)
     setError(null)
     setHotels([])
@@ -118,6 +119,7 @@ export default function Search() {
       const { hotels: results, totalCount: total, nextPageToken: token } = await searchHotels({
         city: cityVal, checkIn: checkInVal, checkOut: checkOutVal, adults: adultsVal,
       })
+      console.log(`[Search] results: ${results.length} hotels returned, total=${total}`)
       setHotels(results)
       setTotalCount(total)
       setNextPageToken(token)
@@ -127,6 +129,7 @@ export default function Search() {
         hotels: results, totalCount: total, nextPageToken: token,
       }))
     } catch (err) {
+      console.error('[Search] search error:', err.message)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -141,12 +144,14 @@ export default function Search() {
 
   const handleLoadMore = async () => {
     if (!nextPageToken) return
+    console.log(`[Search] load more: city=${searchCity} page token=${nextPageToken}`)
     setLoadingMore(true)
     setError(null)
     try {
       const { hotels: more, nextPageToken: token } = await searchHotels({
         city: searchCity, checkIn, checkOut, adults, nextPageToken,
       })
+      console.log(`[Search] load more: ${more.length} additional hotels loaded`)
       const merged = [...hotels, ...more]
       setHotels(merged)
       setNextPageToken(token)
@@ -155,6 +160,7 @@ export default function Search() {
         hotels: merged, totalCount, nextPageToken: token,
       }))
     } catch (err) {
+      console.error('[Search] load more error:', err.message)
       setError(err.message)
     } finally {
       setLoadingMore(false)
@@ -165,12 +171,15 @@ export default function Search() {
     setCompareError(null)
     const exists = selected.find((h) => h.id === hotel.id)
     if (exists) {
+      console.log(`[Compare] removed: ${hotel.name}`)
       setSelected((prev) => prev.filter((h) => h.id !== hotel.id))
     } else {
       if (selected.length >= 3) {
+        console.warn('[Compare] max 3 hotels reached')
         setCompareError('You can compare up to 3 hotels only.')
         return
       }
+      console.log(`[Compare] added: ${hotel.name} (${selected.length + 1}/3)`)
       setSelected((prev) => [...prev, hotel])
     }
   }

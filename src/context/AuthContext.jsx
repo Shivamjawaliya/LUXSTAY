@@ -12,7 +12,8 @@ export function AuthProvider({ children }) {
     // which processes any OAuth hash/code in the URL before resolving.
     // Using it as the sole source of truth prevents the OAuth race where
     // getSession() resolved null before the hash was exchanged.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(`[Auth] event=${event}`, session ? `user=${session.user.email}` : 'no session')
       setSession(session)
       if (session?.access_token) {
         localStorage.setItem('luxstay_token', session.access_token)
@@ -26,6 +27,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   const signOut = async () => {
+    console.log('[Auth] sign out')
     await supabase.auth.signOut()
     localStorage.removeItem('luxstay_token')
     setSession(null)

@@ -13,16 +13,20 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     setAuthError(null)
+    console.log(`[Login] email sign-in attempt: ${email}`)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
+      console.warn('[Login] email sign-in failed:', error.message)
       setAuthError(error.message)
     } else {
+      console.log('[Login] email sign-in success → /search')
       window.location.href = '/search'
     }
     setLoading(false)
   }
 
   const handleOAuth = async (provider) => {
+    console.log(`[Login] OAuth sign-in: ${provider}`)
     await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/search` },
