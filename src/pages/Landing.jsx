@@ -26,7 +26,7 @@ export default function Landing() {
 
         <div className="mt-10 flex gap-3">
           <a
-            href="/signup"
+            href="/search"
             className="px-6 py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-700 transition-colors"
           >
             Start for free
