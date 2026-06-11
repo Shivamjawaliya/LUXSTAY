@@ -262,7 +262,7 @@ export default function Search() {
       )}
 
       {/* Main content */}
-      <main className="px-6 py-8 max-w-7xl mx-auto">
+      <main className="px-8 py-8">
 
         {compareError && (
           <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
