@@ -37,17 +37,6 @@ function mapProperty(p) {
   }
 }
 
-export async function autocomplete(query) {
-  if (!query || query.length < 2) return []
-  const params = new URLSearchParams({
-    engine: 'google_hotels_autocomplete',
-    q: query,
-    api_key: API_KEY,
-  })
-  const res = await fetch(`${BASE_URL}?${params}`)
-  const data = await parseResponse(res, 'autocomplete')
-  return data?.completions ?? []
-}
 
 export async function searchHotels({ city, checkIn, checkOut, adults, nextPageToken }) {
   const params = new URLSearchParams({
