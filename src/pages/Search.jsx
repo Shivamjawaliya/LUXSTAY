@@ -176,26 +176,28 @@ export default function Search() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-stone-50">
       {/* Navbar */}
-      <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
-        <button onClick={() => window.location.href = '/'} className="text-base font-semibold tracking-tight text-gray-900">LuxStay</button>
+      <header className="bg-white border-b border-stone-100 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+        <button onClick={() => window.location.href = '/'} className="text-base font-bold tracking-tight text-slate-900">
+          Lux<span className="text-amber-500">Stay</span>
+        </button>
         <div className="flex items-center gap-3">
           {selected.length >= 2 && (
             <button
               onClick={() => window.location.href = '/compare'}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white text-sm font-semibold rounded-xl hover:bg-amber-600 transition-colors shadow-sm shadow-amber-200"
             >
               ⚖️ Compare ({selected.length})
             </button>
           )}
           {selected.length === 1 && (
-            <span className="text-xs text-gray-400 hidden sm:block">Select 1 more to compare</span>
+            <span className="text-xs text-slate-400 hidden sm:block">Select 1 more to compare</span>
           )}
           <button
             onClick={() => window.location.href = '/profile'}
             title={user?.email ?? 'Profile'}
-            className="w-9 h-9 rounded-full bg-gray-900 text-white text-xs font-bold flex items-center justify-center hover:bg-gray-700 transition-colors shrink-0 shadow-sm"
+            className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white text-xs font-bold flex items-center justify-center hover:from-amber-500 hover:to-amber-700 transition-all shrink-0 shadow-sm shadow-amber-200"
           >
             {(user?.email ?? '?').slice(0, 2).toUpperCase()}
           </button>
@@ -250,7 +252,7 @@ export default function Search() {
               className="px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100 w-20 transition-all" />
           </div>
           <button type="submit" disabled={loading}
-            className="px-6 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 disabled:opacity-50 transition-colors shadow-sm">
+            className="px-6 py-2.5 bg-amber-500 text-white text-sm font-semibold rounded-xl hover:bg-amber-600 disabled:opacity-50 transition-colors shadow-sm shadow-amber-200">
             {loading ? 'Searching…' : 'Search'}
           </button>
         </form>
