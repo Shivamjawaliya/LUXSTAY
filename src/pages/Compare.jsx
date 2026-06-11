@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, LabelList, Cell, ReferenceLine,
-  RadialBarChart, RadialBar,
 } from 'recharts'
 
 function getCompare() {
@@ -164,57 +163,25 @@ export default function Compare() {
           </ResponsiveContainer>
         </div>
 
-        {/* ── Rating Circular Chart ── */}
+        {/* ── Rating Chart ── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-0.5">Guest Rating</h2>
-          <p className="text-xs text-gray-400 mb-4">Score out of 5 — each ring = one hotel</p>
-          <div className="flex flex-col sm:flex-row items-center gap-8">
-            <ResponsiveContainer width="100%" height={240}>
-              <RadialBarChart
-                cx="50%"
-                cy="50%"
-                innerRadius="25%"
-                outerRadius="90%"
-                data={hotels.map((h, i) => ({
-                  name: shortName(h.name),
-                  value: Number(h.guestRating ?? 0),
-                  fill: BAR_COLORS[i],
-                })).reverse()}
-                startAngle={90}
-                endAngle={-270}
-                barSize={20}
-              >
-                <RadialBar
-                  dataKey="value"
-                  background={{ fill: '#f3f4f6' }}
-                  cornerRadius={10}
-                  max={5}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null
-                    const d = payload[0]?.payload
-                    return (
-                      <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-lg">
-                        <p className="text-xs text-gray-500 mb-1 max-w-35 truncate">{d?.name}</p>
-                        <p className="text-base font-bold text-gray-900">{d?.value} <span className="text-xs font-normal text-gray-400">/ 5</span></p>
-                      </div>
-                    )
-                  }}
-                />
-              </RadialBarChart>
-            </ResponsiveContainer>
-            {/* Legend */}
-            <div className="flex flex-col gap-3 shrink-0 sm:pr-6">
-              {hotels.map((h, i) => (
-                <div key={h.id} className="flex items-center gap-3">
-                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: BAR_COLORS[i] }} />
-                  <span className="text-xs text-gray-500 truncate max-w-30">{shortName(h.name)}</span>
-                  <span className="text-xs font-bold text-gray-900 ml-auto pl-2">{h.guestRating ?? '—'}<span className="text-gray-400 font-normal">/5</span></span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <h2 className="text-base font-semibold text-gray-900 mb-0.5">Rating Comparison</h2>
+          <p className="text-xs text-gray-400 mb-4">Guest rating (0–5) vs Star class (0–5)</p>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={ratingData} barGap={6} barCategoryGap="35%" margin={{ top: 20, right: 16, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+              <Tooltip content={<RatingTooltip />} cursor={{ fill: '#f9fafb' }} />
+              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 16 }} />
+              <Bar dataKey="Guest Rating" fill="#111827" radius={[6, 6, 0, 0]} barSize={30}>
+                <LabelList dataKey="Guest Rating" position="top" style={{ fontSize: 10, fontWeight: 600, fill: '#374151' }} />
+              </Bar>
+              <Bar dataKey="Star Class" fill="#d1d5db" radius={[6, 6, 0, 0]} barSize={30}>
+                <LabelList dataKey="Star Class" position="top" style={{ fontSize: 10, fontWeight: 600, fill: '#6b7280' }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         {/* ── Side-by-side table ── */}
