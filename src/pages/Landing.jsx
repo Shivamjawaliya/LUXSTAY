@@ -3,7 +3,7 @@ export default function Landing() {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Navbar */}
       <header className="px-8 py-5 flex items-center justify-between border-b border-gray-100">
-        <span className="text-lg font-semibold tracking-tight text-gray-900">LuxStay</span>
+        <img src="/logo.png" alt="LuxStay" className="h-10 w-auto" />
         <div className="flex items-center gap-6">
           <a href="/login" className="text-sm px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors">Sign in</a>
         </div>
