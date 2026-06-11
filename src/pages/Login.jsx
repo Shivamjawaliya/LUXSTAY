@@ -93,15 +93,6 @@ export default function Login() {
         <button className="text-sm text-gray-400 underline hover:text-gray-700 transition-colors">
           Forgot your password?
         </button>
-        <p className="text-sm text-gray-400">
-          Don't have an account?{' '}
-          <button
-            onClick={() => window.location.href = '/signup'}
-            className="underline text-gray-700 hover:text-gray-900 transition-colors"
-          >
-            Sign up
-          </button>
-        </p>
       </div>
     </Shell>
   )

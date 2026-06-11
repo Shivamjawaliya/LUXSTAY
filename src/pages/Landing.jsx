@@ -5,8 +5,7 @@ export default function Landing() {
       <header className="px-8 py-5 flex items-center justify-between border-b border-gray-100">
         <span className="text-lg font-semibold tracking-tight text-gray-900">LuxStay</span>
         <div className="flex items-center gap-6">
-          <a href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Sign in</a>
-          <a href="/signup" className="text-sm px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors">Get started</a>
+          <a href="/login" className="text-sm px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors">Sign in</a>
         </div>
       </header>
 
@@ -30,12 +29,6 @@ export default function Landing() {
             className="px-6 py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-700 transition-colors"
           >
             Start for free
-          </a>
-          <a
-            href="/login"
-            className="px-6 py-3 border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:border-gray-400 transition-colors"
-          >
-            Sign in
           </a>
         </div>
 

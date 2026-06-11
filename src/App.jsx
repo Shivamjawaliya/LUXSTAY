@@ -1,7 +1,6 @@
 import { useAuth } from './context/AuthContext'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
-import Signup from './pages/Signup'
 import Search from './pages/Search'
 import Compare from './pages/Compare'
 import HotelDetail from './pages/HotelDetail'
@@ -27,8 +26,6 @@ function App() {
   // Public routes — accessible without auth
   if (path === '/') return <Landing />
   if (path === '/login') return <Login />
-  if (path === '/signup') return <Signup />
-
   // Protected routes — redirect to login if not authenticated
   if (!session) {
     window.location.replace('/login')
