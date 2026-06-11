@@ -78,8 +78,15 @@ export default function Search() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  // On mount: restore last search or default to London
+  // On mount: if ?fresh=1 (coming from landing), always show London.
+  // Otherwise restore the last search so back-navigation feels instant.
   useEffect(() => {
+    const fresh = new URLSearchParams(window.location.search).get('fresh') === '1'
+    if (fresh) {
+      window.history.replaceState({}, '', '/search')
+      runSearch({ cityVal: 'London', checkInVal: fmt(today), checkOutVal: fmt(tomorrow), adultsVal: 2 })
+      return
+    }
     const last = getLastSearch()
     if (last && last.hotels?.length > 0) {
       setCity(last.city)
@@ -92,7 +99,6 @@ export default function Search() {
       setSearchCity(last.city)
       setSearched(true)
     } else {
-      // No prior search — load London by default
       runSearch({ cityVal: 'London', checkInVal: fmt(today), checkOutVal: fmt(tomorrow), adultsVal: 2 })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
