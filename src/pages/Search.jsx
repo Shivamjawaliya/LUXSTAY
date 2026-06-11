@@ -65,9 +65,7 @@ export default function Search() {
   useEffect(() => { saveCompare(selected) }, [selected])
 
   useEffect(() => {
-    const results = getSuggestions(city)
-    setSuggestions(results)
-    setShowSuggestions(results.length > 0)
+    setSuggestions(getSuggestions(city))
   }, [city])
 
   useEffect(() => {
