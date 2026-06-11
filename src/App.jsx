@@ -24,7 +24,11 @@ function App() {
   if (loading) return <Splash />
 
   // Public routes — accessible without auth
-  if (path === '/') return <Landing />
+  if (path === '/') {
+    // OAuth redirects land here with session already set — skip landing
+    if (session) { window.location.replace('/search?fresh=1'); return null }
+    return <Landing />
+  }
   if (path === '/login') return <Login />
   // Protected routes — redirect to login if not authenticated
   if (!session) {
