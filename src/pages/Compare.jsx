@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend, LabelList, Cell, ReferenceLine,
+  ResponsiveContainer, LabelList, Cell, ReferenceLine,
+  RadialBarChart, RadialBar,
 } from 'recharts'
 
 function getCompare() {
@@ -9,41 +10,70 @@ function getCompare() {
 }
 
 function shortName(name = '') {
-  return name.length > 20 ? name.slice(0, 18) + '…' : name
+  return name.length > 22 ? name.slice(0, 20) + '…' : name
 }
 
-const BAR_COLORS = ['#111827', '#4b5563', '#9ca3af']
+// Distinct color per hotel — indigo / amber / emerald
+const HOTEL_COLORS = [
+  { bar: '#6366f1', light: '#eef2ff', text: '#4338ca', gradient: 'from-indigo-500 to-indigo-400' },
+  { bar: '#f59e0b', light: '#fffbeb', text: '#b45309', gradient: 'from-amber-500 to-amber-400' },
+  { bar: '#10b981', light: '#ecfdf5', text: '#047857', gradient: 'from-emerald-500 to-emerald-400' },
+]
 
+/* ── Tooltips ───────────────────────────────────────────── */
 function PriceTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
+  const idx = payload[0]?.payload?.__idx ?? 0
+  const c = HOTEL_COLORS[idx] ?? HOTEL_COLORS[0]
   return (
-    <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-lg">
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
-      <p className="text-base font-bold text-gray-900">${payload[0].value}<span className="text-xs font-normal text-gray-400"> /night</span></p>
+    <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-xl">
+      <p className="text-xs text-gray-400 mb-1 max-w-[160px] truncate">{label}</p>
+      <p className="text-xl font-bold" style={{ color: c.bar }}>
+        ${payload[0].value}
+        <span className="text-xs font-normal text-gray-400 ml-1">/night</span>
+      </p>
     </div>
   )
 }
 
-function RatingTooltip({ active, payload, label }) {
+function RatingTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
+  const d = payload[0]?.payload
+  const c = HOTEL_COLORS[d?.__idx ?? 0] ?? HOTEL_COLORS[0]
   return (
-    <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-lg">
-      <p className="text-xs font-semibold text-gray-900 mb-2">{label}</p>
-      {payload.map((p) => (
-        <p key={p.name} className="text-xs text-gray-500">{p.name}: <span className="font-semibold text-gray-900">{p.value}</span></p>
-      ))}
+    <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-xl">
+      <p className="text-xs text-gray-400 mb-1 max-w-[160px] truncate">{d?.name}</p>
+      <p className="text-xl font-bold" style={{ color: c.bar }}>
+        {d?.value} <span className="text-xs font-normal text-gray-400">/ 5</span>
+      </p>
     </div>
   )
 }
 
+/* ── Value-score progress bar ───────────────────────────── */
+function ScoreBar({ label, value, max, color, suffix = '' }) {
+  const pct = Math.min(100, max > 0 ? (value / max) * 100 : 0)
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs text-gray-500 truncate max-w-[60%]">{label}</span>
+        <span className="text-xs font-bold text-gray-800">{value}{suffix}</span>
+      </div>
+      <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
+      </div>
+    </div>
+  )
+}
+
+/* ── Main ───────────────────────────────────────────────── */
 export default function Compare() {
   const [hotels, setHotels] = useState(getCompare)
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    setHotels(getCompare())
-    setLoading(false)
-  }, [])
+  useEffect(() => { setHotels(getCompare()) }, [])
 
   const removeHotel = (id) => {
     const updated = hotels.filter((h) => h.id !== id)
@@ -53,9 +83,9 @@ export default function Compare() {
 
   if (hotels.length < 2) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 gap-4">
-        <div className="text-3xl">⚖️</div>
-        <p className="text-sm text-gray-500 text-center">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-6 gap-4">
+        <div className="text-4xl">⚖️</div>
+        <p className="text-sm text-gray-500 text-center font-medium">
           {hotels.length === 1 ? 'Select 1 more hotel to start comparing.' : 'Select at least 2 hotels from search to compare.'}
         </p>
         <a href="/search" className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-700 transition-colors">
@@ -65,20 +95,22 @@ export default function Compare() {
     )
   }
 
-  const priceData = hotels.map((h) => ({
+  /* ── Data ── */
+  const priceData = hotels.map((h, i) => ({
     name: shortName(h.name),
     Price: h.exactPrice ?? (parseFloat((h.price ?? '').replace(/[^0-9.]/g, '')) || 0),
+    __idx: i,
   }))
-
   const avgPrice = Math.round(priceData.reduce((s, d) => s + d.Price, 0) / priceData.length)
+  const maxPrice = Math.max(...priceData.map(d => d.Price))
 
-  const ratingData = hotels.map((h) => ({
+  const radialData = hotels.map((h, i) => ({
     name: shortName(h.name),
-    'Guest Rating': Number(h.guestRating ?? 0),
-    'Star Class': Number(h.starRating ?? 0),
-  }))
+    value: Number(h.guestRating ?? 0),
+    fill: HOTEL_COLORS[i].bar,
+    __idx: i,
+  })).reverse() // RadialBarChart renders outer→inner
 
-  // Amenities: find shared vs unique
   const amenitySets = hotels.map((h) => new Set(h.amenities ?? []))
   const sharedAmenities = [...(amenitySets[0] ?? [])].filter((a) =>
     amenitySets.every((s) => s.has(a))
@@ -92,96 +124,176 @@ export default function Compare() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => { localStorage.removeItem('luxstay_compare'); setHotels([]) }}
-            className="text-sm px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-gray-400 transition-colors"
+            className="text-sm px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-red-200 hover:text-red-500 hover:bg-red-50 transition-all"
           >
             Clear all
           </button>
-          <a href="/search" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">← Back to search</a>
+          <a href="/search" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">← Back</a>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-10">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Compare Hotels</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 mb-1">Compare Hotels</h1>
         <p className="text-sm text-gray-400 mb-8">{hotels.length} hotels selected</p>
 
-        {/* Hotel summary cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-          {hotels.map((hotel, idx) => (
-            <div key={hotel.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-              {hotel.image ? (
-                <img src={hotel.image} alt={hotel.name} className="w-full h-40 object-cover" />
-              ) : (
-                <div className="w-full h-40 bg-gray-100 flex items-center justify-center">
-                  <span className="text-xs text-gray-400">No image</span>
-                </div>
-              )}
-              {/* Color band per hotel */}
-              <div className="h-1" style={{ backgroundColor: BAR_COLORS[idx] }} />
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <h3 className="text-sm font-semibold text-gray-900 leading-snug">{hotel.name}</h3>
-                  <button onClick={() => removeHotel(hotel.id)} className="shrink-0 text-gray-300 hover:text-gray-700 transition-colors text-xl leading-none">×</button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-gray-900">{hotel.price}<span className="text-xs font-normal text-gray-400"> /night</span></span>
-                  <div className="flex items-center gap-1.5">
-                    {hotel.starRating > 0 && <span className="text-xs text-amber-400">{'★'.repeat(Math.min(hotel.starRating, 5))}</span>}
-                    {hotel.guestRating && <span className="text-xs font-semibold bg-gray-100 text-gray-700 px-2 py-0.5 rounded-lg">{hotel.guestRating}</span>}
+        {/* ── Hotel cards ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {hotels.map((hotel, idx) => {
+            const c = HOTEL_COLORS[idx]
+            return (
+              <div key={hotel.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">
+                {hotel.image ? (
+                  <img src={hotel.image} alt={hotel.name} className="w-full h-40 object-cover" />
+                ) : (
+                  <div className="w-full h-40 bg-gray-100 flex items-center justify-center">
+                    <span className="text-3xl">🏨</span>
                   </div>
+                )}
+                <div className="h-1.5" style={{ backgroundColor: c.bar }} />
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.bar }} />
+                      <h3 className="text-sm font-semibold text-gray-900 leading-snug">{hotel.name}</h3>
+                    </div>
+                    <button onClick={() => removeHotel(hotel.id)} className="shrink-0 text-gray-300 hover:text-gray-700 transition-colors text-xl leading-none">×</button>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-lg font-bold text-gray-900">{hotel.price}<span className="text-xs font-normal text-gray-400"> /night</span></span>
+                    <div className="flex items-center gap-1.5">
+                      {hotel.starRating > 0 && <span className="text-xs text-amber-400">{'★'.repeat(Math.min(hotel.starRating, 5))}</span>}
+                      {hotel.guestRating && (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-lg" style={{ backgroundColor: c.light, color: c.text }}>
+                          {hotel.guestRating}★
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {hotel.freeCancellation && (
+                    <span className="inline-block text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2.5 py-0.5">Free cancellation</span>
+                  )}
+                  {hotel.deal && <p className="mt-1.5 text-xs font-medium" style={{ color: c.text }}>{hotel.deal}</p>}
                 </div>
-                {hotel.freeCancellation && (
-                  <span className="inline-block mt-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2.5 py-0.5">Free cancellation</span>
-                )}
-                {hotel.deal && (
-                  <p className="mt-1.5 text-xs text-blue-700">{hotel.deal}</p>
-                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* ── Charts row: Price + Rating side by side ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+          {/* Price — horizontal bar */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-0.5">Price / Night</h2>
+            <p className="text-xs text-gray-400 mb-5">USD · avg <span className="font-semibold text-gray-600">${avgPrice}</span></p>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart
+                data={priceData}
+                layout="vertical"
+                margin={{ top: 0, right: 48, bottom: 0, left: 0 }}
+                barSize={22}
+              >
+                <defs>
+                  {HOTEL_COLORS.map((c, i) => (
+                    <linearGradient key={i} id={`priceGrad${i}`} x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor={c.bar} stopOpacity={0.9} />
+                      <stop offset="100%" stopColor={c.bar} stopOpacity={0.6} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} width={90} />
+                <Tooltip content={<PriceTooltip />} cursor={{ fill: '#f9fafb' }} />
+                <ReferenceLine x={avgPrice} stroke="#e5e7eb" strokeDasharray="4 4" />
+                <Bar dataKey="Price" radius={[0, 8, 8, 0]}>
+                  {priceData.map((_, i) => (
+                    <Cell key={i} fill={`url(#priceGrad${i})`} />
+                  ))}
+                  <LabelList dataKey="Price" position="right" formatter={(v) => `$${v}`} style={{ fontSize: 11, fontWeight: 700, fill: '#374151' }} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Guest Rating — RadialBarChart */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-0.5">Guest Rating</h2>
+            <p className="text-xs text-gray-400 mb-2">Score out of 5</p>
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={200}>
+                <RadialBarChart
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="30%"
+                  outerRadius="90%"
+                  data={radialData}
+                  startAngle={90}
+                  endAngle={-270}
+                  barSize={18}
+                >
+                  <defs>
+                    {HOTEL_COLORS.map((c, i) => (
+                      <linearGradient key={i} id={`radialGrad${i}`} x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor={c.bar} />
+                        <stop offset="100%" stopColor={c.bar} stopOpacity={0.6} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <RadialBar
+                    dataKey="value"
+                    background={{ fill: '#f3f4f6' }}
+                    cornerRadius={8}
+                    max={5}
+                  >
+                    {radialData.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} />
+                    ))}
+                  </RadialBar>
+                  <Tooltip content={<RatingTooltip />} />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              {/* Legend below */}
+              <div className="flex justify-center gap-4 mt-1">
+                {[...hotels].reverse().map((h, i) => {
+                  const realIdx = hotels.length - 1 - i
+                  const c = HOTEL_COLORS[realIdx]
+                  return (
+                    <div key={h.id} className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.bar }} />
+                      <span className="text-xs text-gray-500 truncate max-w-[80px]">{shortName(h.name)}</span>
+                      <span className="text-xs font-bold" style={{ color: c.bar }}>{h.guestRating ?? '—'}</span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* ── Price Chart ── */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-          <div className="flex items-start justify-between mb-1">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Price Comparison</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Nightly rate in USD · avg ${avgPrice}</p>
-            </div>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={priceData} margin={{ top: 24, right: 16, bottom: 0, left: 0 }} barSize={52}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
-              <Tooltip content={<PriceTooltip />} cursor={{ fill: '#f9fafb' }} />
-              <ReferenceLine y={avgPrice} stroke="#e5e7eb" strokeDasharray="5 5" label={{ value: `avg $${avgPrice}`, position: 'insideTopRight', fontSize: 10, fill: '#9ca3af', dy: -6 }} />
-              <Bar dataKey="Price" radius={[8, 8, 0, 0]}>
-                {priceData.map((_, i) => <Cell key={i} fill={BAR_COLORS[i]} />)}
-                <LabelList dataKey="Price" position="top" formatter={(v) => `$${v}`} style={{ fontSize: 11, fontWeight: 700, fill: '#374151' }} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
         </div>
 
-        {/* ── Rating Chart ── */}
+        {/* ── Value score bars ── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-0.5">Rating Comparison</h2>
-          <p className="text-xs text-gray-400 mb-4">Guest rating (0–5) vs Star class (0–5)</p>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={ratingData} barGap={6} barCategoryGap="35%" margin={{ top: 20, right: 16, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-              <Tooltip content={<RatingTooltip />} cursor={{ fill: '#f9fafb' }} />
-              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 16 }} />
-              <Bar dataKey="Guest Rating" fill="#111827" radius={[6, 6, 0, 0]} barSize={30}>
-                <LabelList dataKey="Guest Rating" position="top" style={{ fontSize: 10, fontWeight: 600, fill: '#374151' }} />
-              </Bar>
-              <Bar dataKey="Star Class" fill="#d1d5db" radius={[6, 6, 0, 0]} barSize={30}>
-                <LabelList dataKey="Star Class" position="top" style={{ fontSize: 10, fontWeight: 600, fill: '#6b7280' }} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <h2 className="text-base font-semibold text-gray-900 mb-1">Value at a Glance</h2>
+          <p className="text-xs text-gray-400 mb-6">Price, guest rating, and review count compared side by side</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            {hotels.map((h, idx) => {
+              const c = HOTEL_COLORS[idx]
+              return (
+                <div key={h.id} className="flex flex-col gap-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.bar }} />
+                    <p className="text-xs font-semibold text-gray-700 truncate">{h.name}</p>
+                  </div>
+                  <ScoreBar label="Price / night" value={h.exactPrice ?? 0} max={maxPrice} color={c.bar} suffix=" USD" />
+                  <ScoreBar label="Guest rating" value={Number(h.guestRating ?? 0)} max={5} color={c.bar} suffix=" / 5" />
+                  <ScoreBar label="Star class" value={Number(h.starRating ?? 0)} max={5} color={c.bar} suffix=" ★" />
+                  {h.reviewCount > 0 && (
+                    <ScoreBar label="Reviews" value={h.reviewCount} max={Math.max(...hotels.map(x => x.reviewCount ?? 0))} color={c.bar} />
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         {/* ── Side-by-side table ── */}
@@ -194,7 +306,7 @@ export default function Compare() {
                   <th className="text-left pb-3 pr-6 text-xs text-gray-400 font-medium w-36">Attribute</th>
                   {hotels.map((h, i) => (
                     <th key={h.id} className="text-left pb-3 pr-6 text-xs font-semibold text-gray-900">
-                      <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style={{ backgroundColor: BAR_COLORS[i] }} />
+                      <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style={{ backgroundColor: HOTEL_COLORS[i].bar }} />
                       {h.name}
                     </th>
                   ))}
@@ -221,7 +333,7 @@ export default function Compare() {
           </div>
         </div>
 
-        {/* ── Shared amenities ── */}
+        {/* ── Amenities ── */}
         {sharedAmenities.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
             <h2 className="text-base font-semibold text-gray-900 mb-1">Shared Amenities</h2>
@@ -234,28 +346,38 @@ export default function Compare() {
           </div>
         )}
 
-        {/* ── Per-hotel amenities ── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-10">
           <h2 className="text-base font-semibold text-gray-900 mb-4">All Amenities</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {hotels.map((h, idx) => (
-              <div key={h.id}>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: BAR_COLORS[idx] }} />
-                  <p className="text-xs font-semibold text-gray-700 truncate">{h.name}</p>
+            {hotels.map((h, idx) => {
+              const c = HOTEL_COLORS[idx]
+              return (
+                <div key={h.id}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: c.bar }} />
+                    <p className="text-xs font-semibold text-gray-700 truncate">{h.name}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(h.amenities ?? []).length > 0
+                      ? h.amenities.map((a) => (
+                          <span
+                            key={a}
+                            className="text-xs rounded-full px-2.5 py-1"
+                            style={sharedAmenities.includes(a)
+                              ? { backgroundColor: c.bar, color: '#fff' }
+                              : { backgroundColor: c.light, color: c.text }}
+                          >
+                            {a}
+                          </span>
+                        ))
+                      : <span className="text-xs text-gray-400">No data</span>
+                    }
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {(h.amenities ?? []).length > 0
-                    ? h.amenities.map((a) => (
-                        <span key={a} className={`text-xs rounded-full px-2.5 py-1 ${sharedAmenities.includes(a) ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'}`}>{a}</span>
-                      ))
-                    : <span className="text-xs text-gray-400">No data</span>
-                  }
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
-          <p className="text-xs text-gray-400 mt-4">Dark = shared across all hotels</p>
+          <p className="text-xs text-gray-400 mt-4">Filled = shared across all hotels</p>
         </div>
 
         <div className="flex justify-end">
