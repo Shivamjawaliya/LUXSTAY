@@ -29,6 +29,9 @@ function getCompare() {
 function saveCompare(arr) {
   localStorage.setItem('luxstay_compare', JSON.stringify(arr))
 }
+function getLastSearch() {
+  try { return JSON.parse(localStorage.getItem('luxstay_last_search') ?? 'null') } catch { return null }
+}
 
 export default function Search() {
   const { user } = useAuth()
@@ -77,28 +80,57 @@ export default function Search() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const handleSearch = async (e) => {
-    e.preventDefault()
-    if (!city.trim()) return
+  // On mount: restore last search or default to London
+  useEffect(() => {
+    const last = getLastSearch()
+    if (last && last.hotels?.length > 0) {
+      setCity(last.city)
+      setCheckIn(last.checkIn)
+      setCheckOut(last.checkOut)
+      setAdults(last.adults)
+      setHotels(last.hotels)
+      setTotalCount(last.totalCount ?? 0)
+      setNextPageToken(last.nextPageToken ?? null)
+      setSearchCity(last.city)
+      setSearched(true)
+    } else {
+      // No prior search — load London by default
+      runSearch({ cityVal: 'London', checkInVal: fmt(today), checkOutVal: fmt(tomorrow), adultsVal: 2 })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const runSearch = async ({ cityVal, checkInVal, checkOutVal, adultsVal }) => {
     setLoading(true)
     setError(null)
     setHotels([])
     setNextPageToken(null)
     setSearched(true)
+    setCity(cityVal)
     try {
-      localStorage.setItem('luxstay_dates', JSON.stringify({ checkIn, checkOut, adults }))
+      localStorage.setItem('luxstay_dates', JSON.stringify({ checkIn: checkInVal, checkOut: checkOutVal, adults: adultsVal }))
       const { hotels: results, totalCount: total, nextPageToken: token } = await searchHotels({
-        city: city.trim(), checkIn, checkOut, adults,
+        city: cityVal, checkIn: checkInVal, checkOut: checkOutVal, adults: adultsVal,
       })
       setHotels(results)
       setTotalCount(total)
       setNextPageToken(token)
-      setSearchCity(city.trim())
+      setSearchCity(cityVal)
+      localStorage.setItem('luxstay_last_search', JSON.stringify({
+        city: cityVal, checkIn: checkInVal, checkOut: checkOutVal, adults: adultsVal,
+        hotels: results, totalCount: total, nextPageToken: token,
+      }))
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSearch = async (e) => {
+    e.preventDefault()
+    if (!city.trim()) return
+    await runSearch({ cityVal: city.trim(), checkInVal: checkIn, checkOutVal: checkOut, adultsVal: adults })
   }
 
   const handleLoadMore = async () => {
@@ -109,8 +141,13 @@ export default function Search() {
       const { hotels: more, nextPageToken: token } = await searchHotels({
         city: searchCity, checkIn, checkOut, adults, nextPageToken,
       })
-      setHotels((prev) => [...prev, ...more])
+      const merged = [...hotels, ...more]
+      setHotels(merged)
       setNextPageToken(token)
+      localStorage.setItem('luxstay_last_search', JSON.stringify({
+        city: searchCity, checkIn, checkOut, adults,
+        hotels: merged, totalCount, nextPageToken: token,
+      }))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -214,6 +251,11 @@ export default function Search() {
         </form>
       </div>
 
+      {/* Compare tray */}
+      {selected.length > 0 && (
+        <CompareTray selected={selected} onRemove={toggleSelect} />
+      )}
+
       {/* Main content */}
       <main className="px-6 py-8 max-w-5xl mx-auto">
 
@@ -285,6 +327,37 @@ export default function Search() {
           </div>
         )}
       </main>
+    </div>
+  )
+}
+
+function CompareTray({ selected, onRemove }) {
+  return (
+    <div className="bg-white border-b border-gray-100 px-6 py-3">
+      <div className="flex items-center gap-3 overflow-x-auto">
+        <span className="text-xs text-gray-400 shrink-0 mr-1">Compare:</span>
+        {selected.map((hotel) => (
+          <div
+            key={hotel.id}
+            className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 shrink-0 w-48"
+          >
+            {hotel.image ? (
+              <img src={hotel.image} alt={hotel.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                <span className="text-lg">🏨</span>
+              </div>
+            )}
+            <span className="text-xs font-medium text-gray-900 truncate flex-1">{hotel.name}</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onRemove(hotel) }}
+              className="text-gray-300 hover:text-gray-900 text-lg leading-none font-light transition-colors shrink-0"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
