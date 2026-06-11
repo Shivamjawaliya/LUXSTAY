@@ -19,7 +19,7 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-        <a href="/"><img src="/logo.png" alt="LuxStay" className="h-10 w-auto" /></a>
+        <a href="/" className="text-base font-semibold tracking-tight text-gray-900">LuxStay</a>
         <button onClick={() => window.history.back()} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">← Back</button>
       </header>
 

@@ -92,7 +92,7 @@ export default function Compare() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-        <a href="/"><img src="/logo.png" alt="LuxStay" className="h-10 w-auto" /></a>
+        <a href="/" className="text-base font-semibold tracking-tight text-gray-900">LuxStay</a>
         <div className="flex items-center gap-3">
           <button
             onClick={() => { localStorage.removeItem('luxstay_compare'); setHotels([]) }}

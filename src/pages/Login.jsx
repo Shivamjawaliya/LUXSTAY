@@ -117,9 +117,7 @@ function Shell({ children }) {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
       <div className="w-full max-w-sm py-10">
-        <div className="flex justify-center mb-8">
-          <img src="/logo.png" alt="LuxStay" className="h-16 w-auto" />
-        </div>
+        <p className="text-lg font-semibold tracking-tight text-gray-900 mb-8 text-center">LuxStay</p>
         {children}
       </div>
     </div>

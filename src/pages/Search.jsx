@@ -188,9 +188,7 @@ export default function Search() {
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
       <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
-        <button onClick={() => window.location.href = '/'} className="flex items-center">
-          <img src="/logo.png" alt="LuxStay" className="h-10 w-auto" />
-        </button>
+        <button onClick={() => window.location.href = '/'} className="text-base font-semibold tracking-tight text-gray-900">LuxStay</button>
         <div className="flex items-center gap-3">
           {selected.length >= 2 && (
             <button
